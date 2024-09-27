@@ -1,8 +1,8 @@
-import ParseContext from "./context";
+import ParseContext from "./context.js";
 import ts from "typescript";
-import {bodyString} from "./utils";
-import {NotEmptyStringFiltered} from "../utils";
-import {parseNode} from "./index";
+import {bodyString} from "./utils.js";
+import {NotEmptyStringFiltered} from "../utils.js";
+import {parseNode} from "./index.js";
 
 function formatMethod(name: string, parameters: string, body: string): string {
     return `func ${name}(${parameters}):\n${bodyString(body)}`;

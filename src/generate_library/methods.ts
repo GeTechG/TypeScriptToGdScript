@@ -1,8 +1,8 @@
-import {FunctionParam, parseFunctionParam} from "./functions";
-import parseDocs from "./docs";
-import gdTypeToTs from "./types";
+import {FunctionParam, parseFunctionParam} from "./functions.js";
+import parseDocs from "./docs.js";
+import gdTypeToTs from "./types.js";
 
-export type ClassMethod = {
+export interface ClassMethod {
     return?: {
         "@_type": string;
     };
@@ -10,7 +10,7 @@ export type ClassMethod = {
     description: string;
     "@_name": string;
     "@_qualifiers"?: string;
-};
+}
 
 function formatClassMethod(name: string, params: string, returnType: string, docs: string): string {
     return `${docs}\n${name}(${params}): ${returnType};\n`;

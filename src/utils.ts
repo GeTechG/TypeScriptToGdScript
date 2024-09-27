@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import path from "node:path";
 
-export function getAllFiles(dir: string, extension: string = '.ts'): string[] {
+export function getAllFiles(dir: string, extension = '.ts'): string[] {
     let results: string[] = [];
     const list = fs.readdirSync(dir);
 

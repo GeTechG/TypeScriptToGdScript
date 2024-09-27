@@ -15,25 +15,25 @@ export function sanitizeGodotNameForTs(
         name === "let"
     ) {
         if (type === "argument") {
-            return "_" + name
+            return "_" + name;
         } else {
-            return `"${name}"`
+            return `"${name}"`;
         }
     }
 
     // for enum names in @GlobalScope
-    name = name.replace(".", "_")
+    name = name.replace(".", "_");
 
     // Bizarre case in SliderJoint3D.xml
     if (name.includes("/")) {
         if (type === "argument") {
-            return name.replace("/", "_")
+            return name.replace("/", "_");
         } else {
-            return `"${name}"`
+            return `"${name}"`;
         }
     }
 
-    return name
+    return name;
 }
 
 export function sanitizeGodotValueForTs(
@@ -41,8 +41,8 @@ export function sanitizeGodotValueForTs(
     type: string
 ): string {
     if (type === "StringName") {
-        return `'${value}'`
+        return `'${value}'`;
     }
 
-    return value
+    return value;
 }

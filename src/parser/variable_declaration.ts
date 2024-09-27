@@ -1,6 +1,6 @@
-import ParseContext from "./context";
+import ParseContext from "./context.js";
 import ts from "typescript";
-import {parseNode} from "./index";
+import {parseNode} from "./index.js";
 
 export default function parseVariableDeclaration(node: ts.VariableDeclaration, context: ParseContext) {
     let out = '';

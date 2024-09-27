@@ -1,7 +1,7 @@
 import ts from "typescript";
-import ParseContext from "./context";
-import {NotEmptyStringFiltered} from "../utils";
-import {parseNode} from "./index";
+import ParseContext from "./context.js";
+import {NotEmptyStringFiltered} from "../utils.js";
+import {parseNode} from "./index.js";
 
 function formatSourceFile(className: string | undefined, _extends: string | undefined, statements: string): string {
     let result = '';

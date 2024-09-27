@@ -1,15 +1,15 @@
-import ParseContext from "./context";
+import ParseContext from "./context.js";
 import ts from "typescript";
-import {parseNode} from "./index";
-import {NotEmptyStringFiltered} from "../utils";
+import {parseNode} from "./index.js";
+import {NotEmptyStringFiltered} from "../utils.js";
 
 export default function parseVariableStatement(node: ts.VariableStatement, context: ParseContext) {
-    let declarationList = (node as ts.VariableStatement).declarationList;
+    const declarationList = (node as ts.VariableStatement).declarationList;
     const isConst = (declarationList.flags & ts.NodeFlags.Const) !== 0;
     if (isConst) {
         context.const_counter++;
     }
-    let declarations = declarationList.declarations
+    const declarations = declarationList.declarations
         .map(declaration => parseNode(declaration, context))
         .filter(NotEmptyStringFiltered)
         .join('\n');

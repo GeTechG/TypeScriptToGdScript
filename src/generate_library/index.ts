@@ -1,6 +1,6 @@
-import generateClasses from "./classes";
+import generateClasses from "./classes.js";
 
 export default function generateLibrary(godotSourceDirectory: string) {
-    let classes = generateClasses(godotSourceDirectory);
+    const classes = generateClasses(godotSourceDirectory);
     return [...classes];
 }

@@ -1,8 +1,8 @@
-import ParseContext from "./context";
+import ParseContext from "./context.js";
 import ts from "typescript";
-import {parseNode} from "./index";
-import {bodyString} from "./utils";
-import {NotEmptyStringFiltered} from "../utils";
+import {parseNode} from "./index.js";
+import {bodyString} from "./utils.js";
+import {NotEmptyStringFiltered} from "../utils.js";
 import assert from "node:assert";
 
 function formatClass(className: string, _extends: string | undefined, body: string): string {
@@ -43,7 +43,7 @@ function parseInnerClass(node: ts.ClassDeclaration, context: ParseContext) {
     const expression = node.heritageClauses?.[0]?.types?.[0]?.expression;
     const _extends = expression ? parseNode(expression, context) : undefined;
     const className = node.name ? parseNode(node.name, context) : undefined;
-    assert(className, 'Class name is required')
+    assert(className, 'Class name is required');
 
     context.class_stack.push({ extends: _extends, class_name: className });
     const body = parseClassMembers(node, context);

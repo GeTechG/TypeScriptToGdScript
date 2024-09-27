@@ -1,13 +1,13 @@
 import {XMLParser} from "fast-xml-parser";
-import parseDocs from "./docs";
+import parseDocs from "./docs.js";
 import path from "node:path";
-import {getAllFiles} from "../utils";
+import {getAllFiles} from "../utils.js";
 import fs from "node:fs";
 import synchronizedPrettier from "@prettier/sync";
-import parseFunctions from "./functions";
-import parseClassMethods, {ClassMethod} from "./methods";
-import parseClassMembers, {ClassMember} from "./members";
-import parseSingletons from "./singletons";
+import parseFunctions from "./functions.js";
+import parseClassMethods, {ClassMethod} from "./methods.js";
+import parseClassMembers, {ClassMember} from "./members.js";
+import parseSingletons from "./singletons.js";
 
 const CLASSES_PATH = 'doc/classes';
 const GDSCRIPT_PATH = 'modules/gdscript/doc_classes';

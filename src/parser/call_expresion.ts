@@ -1,7 +1,7 @@
-import ParseContext from "./context";
+import ParseContext from "./context.js";
 import ts from "typescript";
-import {parseNode} from "./index";
-import {RENAME_FUNCTIONS} from "../generate_library/functions";
+import {parseNode} from "./index.js";
+import {RENAME_FUNCTIONS} from "../generate_library/functions.js";
 
 const CALL_EXPRESSION_MAP = new Map([
     ['console.log', 'prints']

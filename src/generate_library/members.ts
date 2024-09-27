@@ -1,15 +1,15 @@
-import parseDocs from "./docs";
-import {sanitizeGodotNameForTs} from "./sanitizer";
-import gdTypeToTs from "./types";
+import parseDocs from "./docs.js";
+import {sanitizeGodotNameForTs} from "./sanitizer.js";
+import gdTypeToTs from "./types.js";
 
-export type ClassMember = {
+export interface ClassMember {
     "#text": string;
     "@_name": string;
     "@_type": string;
     "@_setter"?: string;
     "@_getter"?: string;
     "@_default"?: string;
-};
+}
 
 function formatClassMember(name: string, type: string, getter?: string, setter?: string, docs?: string): string {
     let output = `${docs}\n${name}: ${type};\n`;

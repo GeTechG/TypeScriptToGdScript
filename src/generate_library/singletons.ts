@@ -1,6 +1,6 @@
-import {ClassMember} from "./members";
-import parseDocs from "./docs";
-import gdTypeToTs from "./types";
+import {ClassMember} from "./members.js";
+import parseDocs from "./docs.js";
+import gdTypeToTs from "./types.js";
 
 function formatSingletonMember(name: string, type: string, docs: string): string {
     return `${docs}\nexport const ${name}: ${type};\n`;

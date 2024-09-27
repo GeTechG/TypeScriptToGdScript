@@ -1,19 +1,19 @@
-import gdTypeToTs from "./types";
-import {sanitizeGodotNameForTs, sanitizeGodotValueForTs} from "./sanitizer";
-import {ClassMethod} from "./methods";
-import parseDocs from "./docs";
+import gdTypeToTs from "./types.js";
+import {sanitizeGodotNameForTs, sanitizeGodotValueForTs} from "./sanitizer.js";
+import {ClassMethod} from "./methods.js";
+import parseDocs from "./docs.js";
 
 export const SKIP_FUNCTIONS = ['typeof', 'prints'];
 export const RENAME_FUNCTIONS = new Map([
     ['print', 'gdprint']
 ]);
 
-export type FunctionParam = {
+export interface FunctionParam {
     "@_index": number;
     "@_name": string;
     "@_type": string;
     "@_default"?: string;
-};
+}
 
 function formatFunctionParam(name: string, type: string, defaultValue?: string): string {
     return defaultValue ?
