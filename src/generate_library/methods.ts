@@ -19,7 +19,8 @@ function formatClassMethod(name: string, params: string, returnType: string, doc
 export function parseClassMethod(method: ClassMethod): string {
     const docs = parseDocs(method.description);
     const name = method["@_name"];
-    const params = method.param?.map(parseFunctionParam).join('') || '';
+    const isVararg = method["@_qualifiers"]?.includes('vararg');
+    const params = isVararg ? '...args: any[]' : method.param?.map(parseFunctionParam).join('') || '';
     const returnType = gdTypeToTs(method.return?.["@_type"] || 'void');
     return formatClassMethod(name, params, returnType, docs);
 }

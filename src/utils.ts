@@ -20,5 +20,9 @@ export function getAllFiles(dir: string, extension: string = '.ts'): string[] {
 }
 
 export function NotNullFiltered<T>(value: T[]): NonNullable<T>[] {
-    return value.filter(Boolean) as NonNullable<T>[];
+    return value.filter((v) => v !== null && v !== undefined);
+}
+
+export function NotEmptyStringFiltered(value: string): boolean {
+    return value.trim() !== '';
 }

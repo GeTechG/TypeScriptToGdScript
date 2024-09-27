@@ -3,7 +3,10 @@ import {sanitizeGodotNameForTs, sanitizeGodotValueForTs} from "./sanitizer";
 import {ClassMethod} from "./methods";
 import parseDocs from "./docs";
 
-export const SKIP_FUNCTIONS = ['typeof'];
+export const SKIP_FUNCTIONS = ['typeof', 'prints'];
+export const RENAME_FUNCTIONS = new Map([
+    ['print', 'gdprint']
+]);
 
 export type FunctionParam = {
     "@_index": number;
@@ -30,7 +33,8 @@ export function parseFunctionParam(param: FunctionParam): string {
 }
 
 export function parseFunction(method: ClassMethod): string {
-    const params = method.param?.map(parseFunctionParam).join('') || '';
+    const isVararg = method["@_qualifiers"]?.includes('vararg');
+    const params = isVararg ? '...args: any[]' : method.param?.map(parseFunctionParam).join('') || '';
     const returnType = gdTypeToTs(method.return?.["@_type"] || 'void');
     return `${parseDocs(method.description)}\n${formatFunction(method["@_name"], params, returnType)}`;
 }
@@ -38,6 +42,10 @@ export function parseFunction(method: ClassMethod): string {
 export default function parseFunctions(methods: ClassMethod[]): string {
     return methods
         .filter(method => !SKIP_FUNCTIONS.includes(method["@_name"]))
+        .map(method => {
+            const name = RENAME_FUNCTIONS.get(method["@_name"]) || method["@_name"];
+            return {...method, "@_name": name};
+        })
         .map(parseFunction)
         .join('\n');
 }

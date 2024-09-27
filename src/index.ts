@@ -31,7 +31,7 @@ yargs(hideBin(process.argv))
         for (let [name, content] of libraries) {
             let godotPath = path.join(projectPath, 'types', 'godot');
             if (!fs.existsSync(godotPath)) {
-                fs.mkdirSync(godotPath, { recursive: true });
+                fs.mkdirSync(godotPath, {recursive: true});
             }
             fs.writeFileSync(path.join(godotPath, name + '.d.ts'), content);
         }
@@ -40,6 +40,19 @@ yargs(hideBin(process.argv))
     }, (argv) => {
         let scriptsDirectory = path.join(projectPath, <string>argv.src);
         let tsFiles = getAllFiles(scriptsDirectory);
-        tsFiles.forEach(tsFile => parse(tsFile));
+        let parsedFiles = tsFiles.map(tsFile => [tsFile, parse(tsFile)]);
+        for (let [tsFile, content] of parsedFiles) {
+            let localPath = path
+                .relative(scriptsDirectory, tsFile)
+                .replace(/\.ts$/, '.gd');
+            let outFile = path.join(projectPath, <string>argv.out, localPath);
+
+            let outDir = path.dirname(outFile);
+            if (!fs.existsSync(outDir)) {
+                fs.mkdirSync(outDir, {recursive: true});
+            }
+
+            fs.writeFileSync(outFile, content);
+        }
     })
     .parse()
