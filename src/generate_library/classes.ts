@@ -5,32 +5,55 @@ import {getAllFiles} from "../utils.js";
 import fs from "node:fs";
 import synchronizedPrettier from "@prettier/sync";
 import parseFunctions from "./functions.js";
-import parseClassMethods, {ClassMethod} from "./methods.js";
-import parseClassMembers, {ClassMember} from "./members.js";
+import parseClassMethods, {type ClassMethod} from "./methods.js";
+import parseClassMembers, {type ClassMember} from "./members.js";
 import parseSingletons from "./singletons.js";
+import parseClassAnnotations, {ClassAnnotation} from "./annotations.js";
+import parseClassOperators, {ClassOperator} from "./operators.js";
+import parseClassConstants, {ClassConstant} from "./constants.js";
+import parseClassConstructors, {ClassConstructor} from "./constructors.js";
+import config, {projectPath} from "../config.js";
+import signletons from "../data/singletons.json" assert {type: "json"};
 
 const CLASSES_PATH = 'doc/classes';
 const GDSCRIPT_PATH = 'modules/gdscript/doc_classes';
-
-const SKIP_CLASSES = ['float', 'int', 'bool'];
+const SKIP_CLASSES = ['Signal', 'float', 'int', 'bool'];
 
 const parser = new XMLParser({
     ignoreAttributes: false,
     isArray: (tagName) => {
-        return tagName === 'method' || tagName === 'param' || tagName === 'member';
+        return ['method', 'param', 'member', 'constant', 'operator'].includes(tagName);
     }
 });
 
 interface XmlClassData {
     description: string;
-    methods?: {
-        method: ClassMethod[];
-    };
-    members?: {
-        member: ClassMember[];
-    };
+    constructors?: { constructor: ClassConstructor[] };
+    methods?: { method: ClassMethod[] };
+    members?: { member: ClassMember[] };
+    annotations?: { annotation: ClassAnnotation[] };
+    constants?: { constant: ClassConstant[] };
+    operators?: { operator: ClassOperator[] };
     "@_name": string;
     "@_inherits"?: string;
+}
+
+function formatClassOutput(name: string, description: string, inherits: string | undefined, content: string): string {
+    let output = `declare module "godot" {\n`;
+    if (!name.startsWith("@")) {
+        output += `${parseDocs(description)}\n`;
+        output += `export class ${name}`;
+        if (inherits) {
+            output += ` extends ${inherits}`;
+        }
+        output += ' {\n';
+    }
+    output += content;
+    if (!name.startsWith("@")) {
+        output += '}\n';
+    }
+    output += '}';
+    return synchronizedPrettier.format(output, { parser: 'typescript' });
 }
 
 export default function generateClasses(godotSourceDir: string) {
@@ -47,37 +70,44 @@ export default function generateClasses(godotSourceDir: string) {
     return allFiles.map(file => {
         const xmlContent = fs.readFileSync(file, 'utf-8');
         const parsedContent = parser.parse(xmlContent).class as XmlClassData;
-        const isGlobalScope = parsedContent["@_name"].startsWith("@");
+        const name = parsedContent["@_name"];
+        const isGlobalScope = name.startsWith("@");
 
-        let output = `declare module "godot" {\n`;
-
-        if (!isGlobalScope) {
-            output += `${parseDocs(parsedContent.description)}\n`;
-            output += `export class ${parsedContent["@_name"]}`;
-
-            if (parsedContent["@_inherits"]) {
-                output += ` extends ${parsedContent["@_inherits"]}`;
-            }
-
-            output += ' {\n';
+        if (signletons.includes(name)) {
+            parsedContent["@_name"] += '_';
         }
 
-        const members = parsedContent.members?.member || [];
+        let content = '';
+        const constructors = parsedContent.constructors?.constructor || [];
+        let members = parsedContent.members?.member || [];
         const methods = parsedContent.methods?.method || [];
+        const annotations = parsedContent.annotations?.annotation || [];
+        const constants = parsedContent.constants?.constant || [];
+        const operators = parsedContent.operators?.operator || [];
+
+        if (name === '@GlobalScope') {
+            if (config?.debug) {
+                const singletonNames = members.map(member => member["@_name"]);
+                fs.writeFileSync(projectPath + '/singletons.json', JSON.stringify(singletonNames, null, 2));
+            }
+            members = members.map(member => {
+                member["@_type"] += '_';
+                return member;
+            });
+        }
 
         if (isGlobalScope) {
-            output += parseSingletons(members);
-            output += parseFunctions(methods);
+            content += parseSingletons(members);
+            content += parseFunctions(methods);
+            content += parseClassAnnotations(annotations);
         } else {
-            output += parseClassMembers(members);
-            output += parseClassMethods(methods);
+            content += parseClassConstructors(constructors);
+            content += parseClassConstants(constants);
+            content += parseClassMembers(members);
+            content += parseClassMethods(methods);
+            content += parseClassOperators(operators);
         }
 
-        if (!isGlobalScope) {
-            output += '}\n';
-        }
-
-        output += '}';
-        return [parsedContent["@_name"], synchronizedPrettier.format(output, { parser: 'typescript' })];
+        return [name, formatClassOutput(parsedContent["@_name"], parsedContent.description, parsedContent["@_inherits"], content)];
     });
 }

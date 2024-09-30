@@ -1,4 +1,4 @@
-import ParseContext from "./context.js";
+import type ParseContext from "./context.js";
 import ts from "typescript";
 import {parseNode} from "./index.js";
 import {NotEmptyStringFiltered} from "../utils.js";

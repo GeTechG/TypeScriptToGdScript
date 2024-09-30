@@ -1,4 +1,4 @@
-import ParseContext from "./context.js";
+import type ParseContext from "./context.js";
 import ts from "typescript";
 import {parseNode} from "./index.js";
 import {bodyString} from "./utils.js";
@@ -14,6 +14,13 @@ function formatClass(className: string, _extends: string | undefined, body: stri
     return result;
 }
 
+function extractClassDetails(node: ts.ClassDeclaration, context: ParseContext) {
+    const expression = node.heritageClauses?.[0]?.types?.[0]?.expression;
+    const _extends = expression ? parseNode(expression, context) : undefined;
+    const className = node.name ? parseNode(node.name, context) : undefined;
+    return { className, _extends };
+}
+
 export default function parseClass(node: ts.ClassDeclaration, context: ParseContext) {
     const modifiers = node.modifiers || [];
     const isExported = modifiers.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
@@ -26,9 +33,7 @@ export default function parseClass(node: ts.ClassDeclaration, context: ParseCont
 }
 
 function parseScriptClass(node: ts.ClassDeclaration, context: ParseContext) {
-    const expression = node.heritageClauses?.[0]?.types?.[0]?.expression;
-    const _extends = expression ? parseNode(expression, context) : undefined;
-    const className = node.name ? parseNode(node.name, context) : undefined;
+    const { className, _extends } = extractClassDetails(node, context);
     context.class_name = className;
     context.extends = _extends;
 
@@ -40,9 +45,7 @@ function parseScriptClass(node: ts.ClassDeclaration, context: ParseContext) {
 }
 
 function parseInnerClass(node: ts.ClassDeclaration, context: ParseContext) {
-    const expression = node.heritageClauses?.[0]?.types?.[0]?.expression;
-    const _extends = expression ? parseNode(expression, context) : undefined;
-    const className = node.name ? parseNode(node.name, context) : undefined;
+    const { className, _extends } = extractClassDetails(node, context);
     assert(className, 'Class name is required');
 
     context.class_stack.push({ extends: _extends, class_name: className });

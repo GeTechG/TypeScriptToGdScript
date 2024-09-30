@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import path from "node:path";
+import * as path from "path";
 
 export function getAllFiles(dir: string, extension = '.ts'): string[] {
     let results: string[] = [];

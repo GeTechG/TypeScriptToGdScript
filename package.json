@@ -4,14 +4,15 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint --fix src",
-    "build": "tsc",
-    "start": "tsc && node dist/index.js",
-    "local-link": "tsc && sudo npm link"
+    "build": "tsc && node copy_defs.js",
+    "start": "npm build && node dist/index.js",
+    "local-link": "npm run build && sudo npm link"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
+  "type": "module",
   "bin": {
     "tstgd": "./dist/index.js"
   },
@@ -21,12 +22,14 @@
     "@types/node": "^22.7.2",
     "@types/yargs": "^17.0.33",
     "eslint": "^9.11.1",
+    "jsonc-parser": "^3.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.7.0"
   },
   "dependencies": {
     "@prettier/sync": "^0.5.2",
+    "execa": "^9.4.0",
     "fast-xml-parser": "^4.5.0",
     "prettier": "^3.3.3",
     "yargs": "^17.7.2"

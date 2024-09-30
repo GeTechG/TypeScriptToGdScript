@@ -2,7 +2,7 @@ export default function gdTypeToTs(godotType: string): string {
     switch (godotType) {
         case "int":
         case "String":
-            return godotType;
+            return "string";
         case "float":
             return "number";
         case "bool":
@@ -11,6 +11,8 @@ export default function gdTypeToTs(godotType: string): string {
             return "any[]";
         case "Variant":
             return "any";
+        case "StringName":
+            return "StringName | string";
         default:
             if (godotType.startsWith("Transform2D")) return "Transform2D";
             if (godotType.match(/^[0-9]+$/)) return "int";

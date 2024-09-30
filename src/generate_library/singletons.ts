@@ -1,4 +1,4 @@
-import {ClassMember} from "./members.js";
+import type {ClassMember} from "./members.js";
 import parseDocs from "./docs.js";
 import gdTypeToTs from "./types.js";
 

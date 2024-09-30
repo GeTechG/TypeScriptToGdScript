@@ -1,25 +1,21 @@
 #!/usr/bin/env node
 
-import yargs from 'yargs/yargs';
+import yargs from 'yargs';
 import {hideBin} from 'yargs/helpers';
-import init from "./init";
-import parse from './parser';
-import path from "node:path";
-import {getAllFiles} from "./utils";
-import generateLibrary from "./generate_library";
+import init from "./init.js";
+import parse from './parser/index.js';
+import * as path from "path";
+import {getAllFiles} from "./utils.js";
+import generateLibrary from "./generate_library/index.js";
 import * as fs from "node:fs";
-
-const projectPath = process.env.PROJECT_PATH || process.cwd();
+import config, {projectPath} from "./config.js";
 
 yargs(hideBin(process.argv))
-    .config({
-        extends: path.join(projectPath, 'tstgd.json'),
-    })
     .command('init', 'Initialize a new project',
         () => {
         },
-        () => {
-            init(process.cwd());
+        async () => {
+            await init(process.cwd());
         })
     .command('lib <godot_src>', 'Generate library from Godot source', (yargs) => {
         yargs.positional('godot_src', {
@@ -36,15 +32,17 @@ yargs(hideBin(process.argv))
             fs.writeFileSync(path.join(godotPath, name + '.d.ts'), content);
         }
     })
-    .command("*", 'parse', () => {}, (argv) => {
-        const scriptsDirectory = path.join(projectPath, (argv.src as string));
+    .command("*", 'parse', () => {}, () => {
+        console.assert(config !== undefined, 'Configuration file not found');
+        const scriptsDirectory = path.join(projectPath, (config!.src));
+        const outDirectory = path.join(projectPath, (config!.out));
         const tsFiles = getAllFiles(scriptsDirectory);
-        const parsedFiles = tsFiles.map(tsFile => [tsFile, parse(tsFile)]);
+        const parsedFiles = tsFiles.map(tsFile => [tsFile, parse(tsFile, outDirectory, projectPath)]);
         for (const [tsFile, content] of parsedFiles) {
             const localPath = path
                 .relative(scriptsDirectory, tsFile)
                 .replace(/\.ts$/, '.gd');
-            const outFile = path.join(projectPath, (argv.out as string), localPath);
+            const outFile = path.join(projectPath, (config!.out), localPath);
 
             const outDir = path.dirname(outFile);
             if (!fs.existsSync(outDir)) {

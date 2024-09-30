@@ -2,23 +2,13 @@ export function sanitizeGodotNameForTs(
     name: string,
     type: "argument" | "property"
 ): string {
-    if (
-        name === "with" ||
-        name === "var" ||
-        name === "class" ||
-        name === "enum" ||
-        name === "default" ||
-        name === "in" ||
-        name === "function" ||
-        name === "interface" ||
-        name === "implements" ||
-        name === "let"
-    ) {
-        if (type === "argument") {
-            return "_" + name;
-        } else {
-            return `"${name}"`;
-        }
+    const reservedKeywords = [
+        "with", "var", "class", "enum", "default", "in",
+        "function", "interface", "implements", "let"
+    ];
+
+    if (reservedKeywords.includes(name)) {
+        return type === "argument" ? `_${name}` : `"${name}"`;
     }
 
     // for enum names in @GlobalScope
@@ -26,11 +16,7 @@ export function sanitizeGodotNameForTs(
 
     // Bizarre case in SliderJoint3D.xml
     if (name.includes("/")) {
-        if (type === "argument") {
-            return name.replace("/", "_");
-        } else {
-            return `"${name}"`;
-        }
+        return type === "argument" ? name.replace("/", "_") : `"${name}"`;
     }
 
     return name;

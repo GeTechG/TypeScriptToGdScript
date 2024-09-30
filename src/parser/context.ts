@@ -9,6 +9,8 @@ export interface MethodContext {
 }
 
 export default interface ParseContext {
+    project_path: string;
+    out_directory: string;
     extends?: string;
     class_name?: string;
     const_counter: number;

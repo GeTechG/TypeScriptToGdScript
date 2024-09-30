@@ -1,4 +1,4 @@
-import {FunctionParam, parseFunctionParam} from "./functions.js";
+import {type FunctionParam, parseFunctionParam} from "./functions.js";
 import parseDocs from "./docs.js";
 import gdTypeToTs from "./types.js";
 
