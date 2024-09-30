@@ -19,6 +19,7 @@ export default async function init(directory: string) {
     fs.mkdirSync(path.join(directory, 'src'), {recursive: true});
     fs.mkdirSync(path.join(directory, 'dist'), {recursive: true});
     fs.appendFileSync(path.join(directory, '.gdignore'), '\nsrc/\nnode_modules/\n');
+    fs.appendFileSync(path.join(directory, '.gitignore'), '\ntypes/\ndist/\n');
 }
 
 function createConfigFile(directory: string, srcDir: string, outDir: string) {

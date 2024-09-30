@@ -1,13 +1,23 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
+import {SignalConstructor} from "godot";
+
 declare module "godot" {
     export type int = number;
+
+    export const PI: 3.14159265358979;
+    export const TAU: 6.28318530717959;
+    export const INF = Number.POSITIVE_INFINITY;
+    export const NAN =  Number.NaN;
 
     // Make &"" string literal type
     export function sn(value: string): StringName;
 
-    export class Signal<T extends unknown[] = []> {
+    // Get node by path
+    export function $<T extends object>(path: string): T;
+
+    class SignalConstructor<T extends unknown[] = []> {
         /**
          * Connects this signal to the specified [param callable]. Optional [param flags] can be also added to configure the connection's behavior (see [enum Object.ConnectFlags] constants). You can provide additional arguments to the connected [param callable] by using [method Callable.bind].
          *
@@ -58,4 +68,6 @@ declare module "godot" {
         /** Returns [code]true[/code] if the signal's name does not exist in its object, or the object is not valid. */
         is_null(): boolean;
     }
+
+    export type Signal<T extends unknown[] = []> = SignalConstructor<T> & Promise<T>;
 }

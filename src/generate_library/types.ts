@@ -1,14 +1,11 @@
 export default function gdTypeToTs(godotType: string): string {
     switch (godotType) {
-        case "int":
         case "String":
             return "string";
         case "float":
             return "number";
         case "bool":
             return "boolean";
-        case "Array":
-            return "any[]";
         case "Variant":
             return "any";
         case "StringName":

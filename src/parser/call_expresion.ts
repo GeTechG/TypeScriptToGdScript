@@ -13,20 +13,20 @@ const UN_RENAME_MAP = Array.from(RENAME_FUNCTIONS.entries()).reduce((map, [key, 
 }, new Map<string, string>());
 
 const OPERATOR_FORMATS: Record<string, string> = {
-    "neq": "a != b",
-    "mul": "a * b",
-    "add": "a + b",
-    "sub": "a - b",
-    "div": "a / b",
-    "lt": "a < b",
-    "lte": "a <= b",
-    "eq": "a == b",
-    "gt": "a > b",
-    "gte": "a >= b",
+    "neq": "(a != b)",
+    "mul": "(a * b)",
+    "add": "(a + b)",
+    "sub": "(a - b)",
+    "div": "(a / b)",
+    "lt": "(a < b)",
+    "lte": "(a <= b)",
+    "eq": "(a == b)",
+    "gt": "(a > b)",
+    "gte": "(a >= b)",
     "get": "a[b]",
-    "mod": "a % b",
-    "pos": "+a",
-    "neg": "-a",
+    "mod": "(a % b)",
+    "pos": "(+a)",
+    "neg": "(-a)",
 };
 
 function formatCallExpression(expression: string, args: string): string {
@@ -41,8 +41,11 @@ export default function parseCallExpression(node: ts.CallExpression, context: Pa
     const expression = parseCallExpressionExpression(node.expression, context);
     const args = node.arguments.map(arg => parseNode(arg, context)).join(', ');
 
-    if (expression === 'sn') {
-        return `&${args}`;
+    switch (expression) {
+        case 'sn':
+            return `&${args}`;
+        case '$':
+            return `$${args.slice(1, -1)}`;
     }
 
     const lastProperty = expression.split('.').pop();

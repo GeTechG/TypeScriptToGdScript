@@ -74,7 +74,7 @@ function formatLeadingComments(ranges: ts.CommentRange[] | undefined, node: ts.N
     if (ranges) {
         output += ranges
             .map(range => formatCommentRange(range, node))
-            .join('\n') + '\n';
+            .join('\n');
     }
     return output;
 }

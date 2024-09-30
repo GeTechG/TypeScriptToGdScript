@@ -12,6 +12,10 @@ export interface ClassMethod {
     "@_qualifiers"?: string;
 }
 
+const PREDEFINED_METHODS = new Map([
+    ['get_node', 'get_node<T>(path: NodePath): T;'],
+]);
+
 function formatClassMethod(name: string, params: string, returnType: string, docs: string): string {
     return `${docs}\n${name}(${params}): ${returnType};\n`;
 }
@@ -22,6 +26,9 @@ export function parseClassMethod(method: ClassMethod): string {
     const isVararg = method["@_qualifiers"]?.includes('vararg');
     const params = isVararg ? '...args: any[]' : method.param?.map(parseFunctionParam).join('') || '';
     const returnType = gdTypeToTs(method.return?.["@_type"] || 'void');
+    if (PREDEFINED_METHODS.has(name)) {
+        return `${docs}\n${PREDEFINED_METHODS.get(name)}\n`;
+    }
     return formatClassMethod(name, params, returnType, docs);
 }
 

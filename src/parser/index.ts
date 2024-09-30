@@ -15,6 +15,7 @@ import parseNewExpression from "./new_expression.js";
 import parseDecorator from "./decorator.js";
 import parseIfStatement from "./if_statement.js";
 import {getLeadingComment} from "./utils.js";
+import parseConditionalExpression from "./conditional_expression.js";
 
 export default function parse(tsFile: string, scriptsDirectory: string, projectPath: string): string {
     const content = fs.readFileSync(tsFile, 'utf-8');
@@ -43,49 +44,68 @@ export function parseNode(node: ts.Node, context: ParseContext): string {
             return parseCallExpression(node as ts.CallExpression, context);
         case ts.SyntaxKind.NewExpression:
             return parseNewExpression(node as ts.NewExpression, context);
-        case ts.SyntaxKind.Decorator:
-            return parseDecorator(node as ts.Decorator, context);
-        case ts.SyntaxKind.SuperKeyword:
-            return 'super';
-        case ts.SyntaxKind.ReturnStatement: {
-            const expression = (node as ts.ReturnStatement).expression;
-            return expression ? `return ${parseNode(expression, context)}` : 'return';
-        }
-        case ts.SyntaxKind.PropertyAccessExpression: {
+        case ts.SyntaxKind.PropertyAccessExpression:
             return parsePropertyAccessExpression(node as ts.PropertyAccessExpression, context);
-        }
-        case ts.SyntaxKind.BinaryExpression:
-            return parseBinaryExpression(node as ts.BinaryExpression, context);
-        case ts.SyntaxKind.TypeReference:
-            return parseNode((node as ts.TypeReferenceNode).typeName, context);
+        case ts.SyntaxKind.ConditionalExpression:
+            return parseConditionalExpression(node as ts.ConditionalExpression, context);
         case ts.SyntaxKind.PropertyDeclaration:
             return parsePropertyDeclaration(node as ts.PropertyDeclaration, context);
         case ts.SyntaxKind.VariableStatement:
             return parseVariableStatement(node as ts.VariableStatement, context);
         case ts.SyntaxKind.VariableDeclaration:
             return parseVariableDeclaration(node as ts.VariableDeclaration, context);
-        case ts.SyntaxKind.StringLiteral:
-            return `"${(node as ts.StringLiteral).text}"`;
-        case ts.SyntaxKind.NumericLiteral:
-            return (node as ts.NumericLiteral).text;
-        case ts.SyntaxKind.Identifier:
-            return (node as ts.Identifier).text;
+        case ts.SyntaxKind.BinaryExpression:
+            return parseBinaryExpression(node as ts.BinaryExpression, context);
+        case ts.SyntaxKind.AsExpression: {
+            const expression = parseNode((node as ts.AsExpression).expression, context);
+            const type = parseNode((node as ts.AsExpression).type, context);
+            return `${expression} as ${type}`;
+        }
+        case ts.SyntaxKind.AwaitExpression: {
+            const expression = parseNode((node as ts.AwaitExpression).expression, context);
+            return `await ${expression}`;
+        }
+        case ts.SyntaxKind.PrefixUnaryExpression: {
+            const operator = ts.tokenToString((node as ts.PrefixUnaryExpression).operator);
+            const operand = parseNode((node as ts.PrefixUnaryExpression).operand, context);
+            return `${operator}${operand}`;
+        }
+        case ts.SyntaxKind.TypeReference:
+            return parseNode((node as ts.TypeReferenceNode).typeName, context);
+        case ts.SyntaxKind.ExpressionStatement: {
+            const comment = getLeadingComment(node, context);
+            return comment + parseNode((node as ts.ExpressionStatement).expression, context);
+        }
+        case ts.SyntaxKind.ReturnStatement: {
+            const expression = (node as ts.ReturnStatement).expression;
+            return expression ? `return ${parseNode(expression, context)}` : 'return';
+        }
+        case ts.SyntaxKind.IfStatement:
+            return parseIfStatement(node as ts.IfStatement, context);
+        case ts.SyntaxKind.Decorator:
+            return parseDecorator(node as ts.Decorator, context);
+        case ts.SyntaxKind.SuperKeyword:
+            return 'super';
         case ts.SyntaxKind.ThisKeyword:
             return 'self';
         case ts.SyntaxKind.TrueKeyword:
             return 'true';
         case ts.SyntaxKind.FalseKeyword:
             return 'false';
+        case ts.SyntaxKind.StringLiteral:
+            return (node as ts.StringLiteral).getText();
+        case ts.SyntaxKind.NumericLiteral:
+            return (node as ts.NumericLiteral).text;
+        case ts.SyntaxKind.Identifier:
+            return (node as ts.Identifier).text;
         case ts.SyntaxKind.StringKeyword:
             return 'String';
         case ts.SyntaxKind.NumberKeyword:
             return 'float';
-        case ts.SyntaxKind.ExpressionStatement: {
-            const comment = getLeadingComment(node, context);
-            return comment + parseNode((node as ts.ExpressionStatement).expression, context);
-        }
-        case ts.SyntaxKind.IfStatement:
-            return parseIfStatement(node as ts.IfStatement, context);
+        case ts.SyntaxKind.BooleanKeyword:
+            return 'bool';
+        case ts.SyntaxKind.VoidKeyword:
+            return 'void';
         default:
             console.warn(`Unparsed node: ${ts.SyntaxKind[node.kind]}`);
             return '';
