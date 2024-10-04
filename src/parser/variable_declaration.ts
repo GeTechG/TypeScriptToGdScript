@@ -11,7 +11,7 @@ interface VariableDeclarationFormatOptions {
     initializer?: string;
 }
 
-function formatVariableDeclaration(options: VariableDeclarationFormatOptions): string {
+function formatVariableDeclaration(options: VariableDeclarationFormatOptions, context: ParseContext): string {
     let output = options.leadingComment;
     output += options.isConst ? 'const ' : 'var ';
     output += options.name;
@@ -19,7 +19,11 @@ function formatVariableDeclaration(options: VariableDeclarationFormatOptions): s
         output += `: ${options.type}`;
     }
     if (options.initializer) {
-        output += ` = ${options.initializer}`;
+        if (options.isConst || context.method_stack.length === 0) {
+            output += ` = ${options.initializer}`;
+        } else {
+            output += `\n${options.name} = ${options.initializer}`;
+        }
     }
     return output;
 }
@@ -29,7 +33,9 @@ export default function parseVariableDeclaration(node: ts.VariableDeclaration, c
     const name = parseNode(node.name, context);
     const type = node.type ? parseNode(node.type, context) : undefined;
     const initializer = node.initializer ? parseNode(node.initializer, context) : undefined;
-    const isConst = context.const_counter > 0;
+    const iSimpleType = (node.initializer && node.initializer?.kind !== ts.SyntaxKind.ArrowFunction &&
+        !ts.isExpression(node.initializer)) || false;
+    const isConst = context.const_counter > 0 && iSimpleType;
 
     return formatVariableDeclaration({
         leadingComment,
@@ -37,5 +43,5 @@ export default function parseVariableDeclaration(node: ts.VariableDeclaration, c
         name,
         type,
         initializer
-    });
+    }, context);
 }

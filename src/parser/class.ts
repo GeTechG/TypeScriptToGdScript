@@ -1,7 +1,7 @@
 import type ParseContext from "./context.js";
 import ts from "typescript";
 import {parseNode} from "./index.js";
-import {bodyString} from "./utils.js";
+import {bodyString, getDeclarationNode} from "./utils.js";
 import {NotEmptyStringFiltered} from "../utils.js";
 import assert from "node:assert";
 
@@ -16,7 +16,9 @@ function formatClass(className: string, _extends: string | undefined, body: stri
 
 function extractClassDetails(node: ts.ClassDeclaration, context: ParseContext) {
     const expression = node.heritageClauses?.[0]?.types?.[0]?.expression;
-    const _extends = expression ? parseNode(expression, context) : undefined;
+    const declaration = expression ? getDeclarationNode(expression, context.program) : undefined;
+    const isTypeAlias = declaration && ts.isInterfaceDeclaration(declaration);
+    const _extends = expression && !isTypeAlias ? parseNode(expression, context) : undefined;
     const className = node.name ? parseNode(node.name, context) : undefined;
     return { className, _extends };
 }

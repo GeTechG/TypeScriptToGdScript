@@ -3,12 +3,14 @@
 import yargs from 'yargs';
 import {hideBin} from 'yargs/helpers';
 import init from "./init.js";
-import parse from './parser/index.js';
+import parse, {ParseOptions} from './parser/index.js';
 import * as path from "path";
 import {getAllFiles} from "./utils.js";
 import generateLibrary from "./generate_library/index.js";
 import * as fs from "node:fs";
 import config, {projectPath} from "./config.js";
+import ts from "typescript";
+import {FeaturesCollectionsContext} from "./parser/context.js";
 
 yargs(hideBin(process.argv))
     .command('init', 'Initialize a new project',
@@ -37,7 +39,50 @@ yargs(hideBin(process.argv))
         const scriptsDirectory = path.join(projectPath, (config!.src));
         const outDirectory = path.join(projectPath, (config!.out));
         const tsFiles = getAllFiles(scriptsDirectory);
-        const parsedFiles = tsFiles.map(tsFile => [tsFile, parse(tsFile, outDirectory, projectPath)]);
+        const featuresFiles = getAllFiles(path.join(import.meta.dirname, 'extends_collections'));
+        const program = ts.createProgram([...tsFiles, ...featuresFiles], {
+            target: ts.ScriptTarget.Latest,
+        }, ts.createCompilerHost({
+            target: ts.ScriptTarget.Latest,
+        }, true));
+        const features: FeaturesCollectionsContext = {
+            Set: false,
+            ArrayUtils: false,
+        }
+        const parsedFiles = tsFiles.map(tsFile => {
+            const options: ParseOptions = {
+                source: program.getSourceFile(tsFile)!,
+                program,
+                features,
+                scriptsDirectory: outDirectory,
+                projectPath,
+                scriptPath: path.relative(scriptsDirectory, tsFile)
+            };
+            return [tsFile, parse(options)];
+        });
+        for (const feature in features) {
+            if (features[feature as keyof FeaturesCollectionsContext]) {
+                switch (feature) {
+                    case 'Set':
+                        features.ArrayUtils = true;
+                        break;
+                }
+            }
+        }
+        for (const feature in features) {
+            if (features[feature as keyof FeaturesCollectionsContext]) {
+                const _path = path.join(import.meta.dirname, 'extends_collections', feature + '.ts');
+                const parsed = parse({
+                    source: program.getSourceFile(_path)!,
+                    program,
+                    features,
+                    scriptsDirectory: outDirectory,
+                    projectPath,
+                    scriptPath: path.join('extends_collections', feature + '.ts')
+                });
+                parsedFiles.push([path.join(outDirectory, 'extends_collections', feature + '.ts'), parsed]);
+            }
+        }
         for (const [tsFile, content] of parsedFiles) {
             const localPath = path
                 .relative(scriptsDirectory, tsFile)

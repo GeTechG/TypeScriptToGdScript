@@ -5,6 +5,7 @@ import {getLeadingComment, getTrailingComment} from "./utils.js";
 
 interface PropertyDeclarationFormatOptions {
     isConst: boolean;
+    isStatic: boolean;
     name: string;
     _type?: string;
     initializer?: string;
@@ -18,6 +19,10 @@ function formatPropertyDeclaration(options: PropertyDeclarationFormatOptions): s
 
     if (options.annotations) {
         output += options.annotations + ' ';
+    }
+
+    if (options.isStatic) {
+        output += 'static ';
     }
 
     output += (options.isConst ? 'const ' : 'var ') + options.name;
@@ -61,9 +66,10 @@ export default function parsePropertyDeclaration(node: ts.PropertyDeclaration, c
 
     const name = parseNode(node.name, context);
     const _type = node.type ? parseNode(node.type, context) : undefined;
-    const isConst = node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ReadonlyKeyword) || false;
     const initializer = node.initializer ? parseNode(node.initializer, context) : undefined;
+    const isConst = node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ReadonlyKeyword) && !!initializer || false;
     const trailingComment = getTrailingComment(node);
+    const isStatic = node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.StaticKeyword) || false;
 
     return formatPropertyDeclaration({
         isConst,
@@ -72,7 +78,8 @@ export default function parsePropertyDeclaration(node: ts.PropertyDeclaration, c
         initializer,
         annotations,
         leadingComment,
-        trailingComment
+        trailingComment,
+        isStatic,
     });
 }
 

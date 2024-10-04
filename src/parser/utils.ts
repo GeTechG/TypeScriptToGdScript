@@ -78,3 +78,55 @@ function formatLeadingComments(ranges: ts.CommentRange[] | undefined, node: ts.N
     }
     return output;
 }
+
+export function getDeclarationsNode(node: ts.Node, program: ts.Program): ts.Declaration[] | undefined {
+    const checker = program.getTypeChecker();
+
+    // Get the symbol of the property access expression
+    const symbol = checker.getSymbolAtLocation(node);
+    if (!symbol) {
+        return undefined;
+    }
+
+    // Get the declaration of the symbol
+    const declarations = symbol.getDeclarations();
+    if (!declarations || declarations.length === 0) {
+        return undefined;
+    }
+
+    // Get the type of the declaration
+    return declarations;
+}
+
+export function getDeclarationNode(node: ts.Node, program: ts.Program): ts.Declaration | undefined {
+    const declarations = getDeclarationsNode(node, program);
+    return declarations ? declarations[0] : undefined;
+}
+
+export function getImportType(importClauseIdentifier: ts.Identifier, program: ts.Program): ts.Declaration | undefined {
+    const checker = program.getTypeChecker();
+    const sourceFiles = program.getSourceFiles();
+
+    for (const sourceFile of sourceFiles) {
+        const symbolAtLocation = checker.getSymbolAtLocation(sourceFile);
+        if (!symbolAtLocation) {
+            continue;
+        }
+        const exports = checker.getExportsOfModule(symbolAtLocation);
+        if (exports) {
+            for (const exp of exports) {
+                if (exp.name === importClauseIdentifier.text) {
+                    const declarations = exp.getDeclarations();
+                    if (!declarations || declarations.length === 0) {
+                        return undefined;
+                    }
+
+                    // Get the type of the declaration
+                    return declarations[0];
+                }
+            }
+        }
+    }
+
+    return undefined;
+}

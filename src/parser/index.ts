@@ -1,6 +1,4 @@
-import * as fs from "node:fs";
 import ts from "typescript";
-import type ParseContext from "./context.js";
 import parseClass from "./class.js";
 import parseMethod from "./method.js";
 import parseSourceFile from "./source.js";
@@ -14,20 +12,44 @@ import parsePropertyAccessExpression from "./property_access_expression.js";
 import parseNewExpression from "./new_expression.js";
 import parseDecorator from "./decorator.js";
 import parseIfStatement from "./if_statement.js";
-import {getLeadingComment} from "./utils.js";
+import {bodyString, getLeadingComment, parseStatement} from "./utils.js";
 import parseConditionalExpression from "./conditional_expression.js";
+import parseConstructor from "./constructor.js";
+import parsePropertyAssignment from "./property_assignment.js";
+import parseForOfStatement from "./for_of_statement.js";
+import ParseContext, {FeaturesCollectionsContext} from "./context.js";
+import parseIdentifier from "./identifier.js";
+import parseArrayLiteralExpression from "./array_literal_expression.js";
+import parseGetterSetterAccessor from "./getter_setter_accesor.js";
+import parseForStatement from "./for_statement.js";
 
-export default function parse(tsFile: string, scriptsDirectory: string, projectPath: string): string {
-    const content = fs.readFileSync(tsFile, 'utf-8');
-    const schema = ts.createSourceFile(tsFile, content, ts.ScriptTarget.Latest, true);
+export interface ParseOptions {
+    source: ts.SourceFile;
+    program: ts.Program;
+    features: FeaturesCollectionsContext;
+    scriptsDirectory: string;
+    scriptPath: string;
+    projectPath: string;
+}
+
+export default function parse(options: ParseOptions): string {
+    const { source, program, features, scriptsDirectory, projectPath } = options;
+
     const context: ParseContext = {
         project_path: projectPath,
+        script_path: options.scriptPath,
         out_directory: scriptsDirectory,
         const_counter: 0,
+        features,
+        parsed_nodes: new Set(),
+        lambdas_nodes: new Set(),
         class_stack: [],
-        method_stack: []
+        method_stack: [],
+        custom_declares: [],
+        program,
     };
-    return parseNode(schema, context);
+
+    return parseNode(source, context);
 }
 
 export function parseNode(node: ts.Node, context: ParseContext): string {
@@ -38,12 +60,30 @@ export function parseNode(node: ts.Node, context: ParseContext): string {
             return parseImportDeclaration(node as ts.ImportDeclaration, context);
         case ts.SyntaxKind.ClassDeclaration:
             return parseClass(node as ts.ClassDeclaration, context);
+        case ts.SyntaxKind.InterfaceDeclaration:
+            return '';
+        case ts.SyntaxKind.Constructor:
+            return parseConstructor(node as ts.ConstructorDeclaration, context);
         case ts.SyntaxKind.MethodDeclaration:
             return parseMethod(node as ts.MethodDeclaration, context);
+        case ts.SyntaxKind.ArrowFunction:
+            return parseMethod(node as ts.MethodDeclaration, context);
+        case ts.SyntaxKind.FunctionDeclaration:
+            return parseMethod(node as ts.FunctionDeclaration, context);
         case ts.SyntaxKind.CallExpression:
             return parseCallExpression(node as ts.CallExpression, context);
         case ts.SyntaxKind.NewExpression:
             return parseNewExpression(node as ts.NewExpression, context);
+        case ts.SyntaxKind.ObjectLiteralExpression: {
+            const properties = (node as ts.ObjectLiteralExpression).properties.map(property => parseNode(property, context)).join(', ');
+            return `{${properties}}`;
+        }
+        case ts.SyntaxKind.PropertyAssignment:
+            return parsePropertyAssignment(node as ts.PropertyAssignment, context);
+        case ts.SyntaxKind.ShorthandPropertyAssignment: {
+            const name = parseNode((node as ts.ShorthandPropertyAssignment).name, context);
+            return `"${name}": ${name}`;
+        }
         case ts.SyntaxKind.PropertyAccessExpression:
             return parsePropertyAccessExpression(node as ts.PropertyAccessExpression, context);
         case ts.SyntaxKind.ConditionalExpression:
@@ -54,6 +94,10 @@ export function parseNode(node: ts.Node, context: ParseContext): string {
             return parseVariableStatement(node as ts.VariableStatement, context);
         case ts.SyntaxKind.VariableDeclaration:
             return parseVariableDeclaration(node as ts.VariableDeclaration, context);
+        case ts.SyntaxKind.VariableDeclarationList:
+            return (node as ts.VariableDeclarationList).declarations.map(declaration => parseNode(declaration, context)).join('\n');
+        case ts.SyntaxKind.TypeAliasDeclaration:
+            return '';
         case ts.SyntaxKind.BinaryExpression:
             return parseBinaryExpression(node as ts.BinaryExpression, context);
         case ts.SyntaxKind.AsExpression: {
@@ -70,11 +114,48 @@ export function parseNode(node: ts.Node, context: ParseContext): string {
             const operand = parseNode((node as ts.PrefixUnaryExpression).operand, context);
             return `${operator}${operand}`;
         }
+        case ts.SyntaxKind.ArrayLiteralExpression:
+            return parseArrayLiteralExpression(node as ts.ArrayLiteralExpression, context);
+        case ts.SyntaxKind.ParenthesizedExpression: {
+            const expression = parseNode((node as ts.ParenthesizedExpression).expression, context);
+            return `(${expression})`;
+        }
+        case ts.SyntaxKind.ElementAccessExpression: {
+            const expression = parseNode((node as ts.ElementAccessExpression).expression, context);
+            const argument = parseNode((node as ts.ElementAccessExpression).argumentExpression, context);
+            return `${expression}[${argument}]`;
+        }
+        case ts.SyntaxKind.PostfixUnaryExpression: {
+            let operator = ts.tokenToString((node as ts.PostfixUnaryExpression).operator);
+            if (operator === '++') {
+                operator = '+= 1';
+            } else if (operator === '--') {
+                operator = '-= 1';
+            }
+            const operand = parseNode((node as ts.PostfixUnaryExpression).operand, context);
+            return `${operand}${operator}`;
+        }
+        case ts.SyntaxKind.NonNullExpression:
+            return parseNode((node as ts.NonNullExpression).expression, context);
         case ts.SyntaxKind.TypeReference:
             return parseNode((node as ts.TypeReferenceNode).typeName, context);
+        case ts.SyntaxKind.ArrayType: {
+            let subType = parseNode((node as ts.ArrayTypeNode).elementType, context);
+            if (subType.startsWith('Array[')) {
+                subType = 'Variant';
+            }
+            return `Array[${subType}]`;
+        }
+        case ts.SyntaxKind.UnionType:
+            return 'Variant';
+        case ts.SyntaxKind.FunctionType:
+            return 'Callable';
         case ts.SyntaxKind.ExpressionStatement: {
+            const expression = parseNode((node as ts.ExpressionStatement).expression, context);
             const comment = getLeadingComment(node, context);
-            return comment + parseNode((node as ts.ExpressionStatement).expression, context);
+            const custom_declaration = context.custom_declares.length > 0 ? context.custom_declares.join('\n') + '\n' : '';
+            context.custom_declares = [];
+            return comment + custom_declaration + expression;
         }
         case ts.SyntaxKind.ReturnStatement: {
             const expression = (node as ts.ReturnStatement).expression;
@@ -82,8 +163,20 @@ export function parseNode(node: ts.Node, context: ParseContext): string {
         }
         case ts.SyntaxKind.IfStatement:
             return parseIfStatement(node as ts.IfStatement, context);
+        case ts.SyntaxKind.ForOfStatement:
+            return parseForOfStatement(node as ts.ForOfStatement, context);
+        case ts.SyntaxKind.ForStatement:
+            return parseForStatement(node as ts.ForStatement, context);
+        case ts.SyntaxKind.WhileStatement: {
+            const whileNode = node as ts.WhileStatement;
+            const expression = parseNode(whileNode.expression, context);
+            const body = ts.isBlock(whileNode.statement) ? parseStatement(whileNode.statement, context) : `${parseNode(whileNode.statement, context)}`;
+            return `while ${expression}:\n${bodyString(body)}`;
+        }
         case ts.SyntaxKind.Decorator:
             return parseDecorator(node as ts.Decorator, context);
+        case ts.SyntaxKind.GetAccessor || ts.SyntaxKind.SetAccessor:
+            return parseGetterSetterAccessor(node as ts.AccessorDeclaration, context);
         case ts.SyntaxKind.SuperKeyword:
             return 'super';
         case ts.SyntaxKind.ThisKeyword:
@@ -97,7 +190,7 @@ export function parseNode(node: ts.Node, context: ParseContext): string {
         case ts.SyntaxKind.NumericLiteral:
             return (node as ts.NumericLiteral).text;
         case ts.SyntaxKind.Identifier:
-            return (node as ts.Identifier).text;
+            return parseIdentifier(node as ts.Identifier, context);
         case ts.SyntaxKind.StringKeyword:
             return 'String';
         case ts.SyntaxKind.NumberKeyword:
@@ -106,6 +199,8 @@ export function parseNode(node: ts.Node, context: ParseContext): string {
             return 'bool';
         case ts.SyntaxKind.VoidKeyword:
             return 'void';
+        case ts.SyntaxKind.NullKeyword:
+            return 'null';
         default:
             console.warn(`Unparsed node: ${ts.SyntaxKind[node.kind]}`);
             return '';

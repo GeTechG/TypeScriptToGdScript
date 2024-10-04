@@ -16,20 +16,20 @@ function formatClassOperator(name: string, params: string, returnType: string, d
 }
 
 const OPERATOR_NAMES_MAP: Record<string, string> = {
-    "operator !=": "neq",
-    "operator *": "mul",
-    "operator +": "add",
-    "operator -": "sub",
-    "operator /": "div",
-    "operator <": "lt",
-    "operator <=": "lte",
-    "operator ==": "eq",
-    "operator >": "gt",
-    "operator >=": "gte",
-    "operator []": "get",
-    "operator %": "mod",
-    "operator unary+": "pos",
-    "operator unary-": "neg",
+    "operator !=": "neqgd",
+    "operator *": "mulgd",
+    "operator +": "addgd",
+    "operator -": "subgd",
+    "operator /": "divgd",
+    "operator <": "ltgd",
+    "operator <=": "ltegd",
+    "operator ==": "eqgd",
+    "operator >": "gtgd",
+    "operator >=": "gtegd",
+    "operator []": "getgd",
+    "operator %": "modgd",
+    "operator unary+": "posgd",
+    "operator unary-": "neggd",
 };
 
 function parseOperatorName(name: string): string {
